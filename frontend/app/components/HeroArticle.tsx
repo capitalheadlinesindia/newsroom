@@ -2,54 +2,40 @@ import Image from "next/image"
 import Link from "next/link"
 import { urlFor } from "@/app/lib/sanity"
 
+function resolveUrl(image: any, width = 2400): string | null {
+  if (!image) return null
+  if (typeof image === "string") return image
+  return urlFor(image).width(width).auto('format').url()
+}
+
 export default function HeroArticle({ article }: any) {
   if (!article) return null
 
+  const imageUrl = resolveUrl(article.mainImage || article.image)
+
   return (
-    <Link href={`/article/${article.slug.current}`}>
-      <article className="group cursor-pointer">
+    <Link href={`/article/${article.slug?.current ?? article.slug}`}>
+      <article className="space-y-3 cursor-pointer">
 
-        {/* LIVE badge */}
-        {article.isLive && (
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-3 h-3 rounded-full bg-[#bb1919] inline-block animate-pulse"></span>
-            <span className="text-[#bb1919] font-bold text-sm tracking-widest uppercase">Live</span>
-          </div>
-        )}
-
-        <h2 className="text-3xl lg:text-4xl font-serif font-bold leading-tight group-hover:underline text-black mb-4">
+        <h2 className="text-3xl font-serif font-bold leading-tight hover:underline">
           {article.title}
         </h2>
 
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          <Image
-            src={urlFor(article.mainImage).width(700).url()}
-            alt={article.mainImage?.alt || ""}
-            width={700}
-            height={450}
-            className="w-full h-52 object-cover"
-          />
-          {article.secondaryImage ? (
+        {imageUrl && (
+          <div className="relative w-full h-[360px] overflow-hidden">
             <Image
-              src={urlFor(article.secondaryImage).width(700).url()}
-              alt={article.secondaryImage?.alt || ""}
-              width={700}
-              height={450}
-              className="w-full h-52 object-cover"
+              src={imageUrl}
+              alt={article.mainImage?.alt || article.image?.alt || article.title || ""}
+              fill
+              className="object-cover"
+              priority
+              sizes="100vw"
             />
-          ) : (
-            <Image
-              src={urlFor(article.mainImage).width(700).url()}
-              alt={article.mainImage?.alt || ""}
-              width={700}
-              height={450}
-              className="w-full h-52 object-cover brightness-75"
-            />
-          )}
-        </div>
+          </div>
+        )}
 
         {article.excerpt && (
-          <p className="text-sm text-gray-700 leading-relaxed">
+          <p className="text-gray-600 text-sm leading-relaxed">
             {article.excerpt}
           </p>
         )}

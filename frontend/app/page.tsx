@@ -1,86 +1,137 @@
-import { client } from "@/app/lib/sanity"
 import {
-  heroQuery,
-  featuredQuery,
-  sidebarQuery,
-} from "@/app/lib/queries"
+  fetchPlacements,
+  toHeroArticle,
+  toFeaturedArticles,
+  toSidebarArticles,
+  toFourGridItems as placementToGrid,
+} from "@/app/lib/placements"
+import { client, urlFor } from "@/app/lib/sanity"
+import { articlesByCategoryQuery, allCategoryArticlesQuery } from "@/app/lib/queries"
 
 import HeroArticle from "@/app/components/HeroArticle"
 import ArticleCard from "@/app/components/ArticleCard"
 import SidebarItem from "@/app/components/SidebarItem"
 import SectionHeader from "@/app/components/SectionHeader"
-import FeaturedTwoUp from "@/app/components/FeaturedTwoUp"
 import FourGrid from "@/app/components/FourGrid"
-import MoreNewsSection from "@/app/components/MoreNewsSection"
-import MustWatch from "@/app/components/MustWatch"
-import FeatureStory from "@/app/components/FeatureStory"
 
-const winterOlympicsItems = [
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/wo1/400/250",
-    live: true,
-    title: "Winter Olympics: Updates from day 13",
-    excerpt: "Follow all the action from the Winter Olympics in Milan-Cortina.",
-  },
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/wo2/400/250",
-    title: "Gaffe-ridden Olympic commentary prompts Italy's Rai sport chief to resign",
-    excerpt:
-      "Paolo Petrecca, whose gaffe-ridden commentary of the event went viral, stands down from his job.",
-  },
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/wo3/400/250",
-    title: "What is ski mountaineering?",
-    excerpt:
-      "BBC Sport's Ask Me Anything team explains what ski mountaineering is ahead of its debut at the 2026 Winter Olympics",
-  },
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/wo4/400/250",
-    title: "GB aim for curling semis & Atkin starts halfpipe medal bid – Thursday's guide",
-    excerpt:
-      "What's happening and who to look out for at the 2026 Winter Olympics in Milan-Cortina.",
-  },
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
+const PLACEHOLDER = "https://placehold.co/400x250/e5e7eb/9ca3af?text=No+Image"
+
+// Default display labels — shown only if admin hasn't renamed the section yet
+const DEFAULT_SECTION_LABELS: Record<string, string> = {
+  newsroom:        "From the Newsroom",
+  winterOlympics:  "Winter Olympics",
+  technology:      "Technology",
+  moreNews_left:   "More News – Left",
+  moreNews_center: "More News – Center",
+  moreNews_right:  "More News – Right",
+  mustWatch:       "Must Watch",
+}
+
+// Ordered list of section keys to render as grids (hero/featured/sidebar handled separately)
+const GRID_SECTION_KEYS = [
+  "newsroom",
+  "winterOlympics",
+  "technology",
+  "moreNews_left",
+  "moreNews_center",
+  "moreNews_right",
+  "mustWatch",
 ]
 
-const techItems = [
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/t1/400/250",
-    title: "OpenAI launches new reasoning model that surprises researchers",
-    excerpt: "The latest model scores record highs on academic benchmarks, raising new questions about AI safety.",
-    category: "AI",
-  },
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/t2/400/250",
-    title: "Apple's mixed-reality headset sales disappoint in first year",
-    excerpt: "Analysts say the high price point and lack of killer apps have slowed consumer adoption.",
-    category: "Tech",
-  },
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/t3/400/250",
-    title: "EU slaps record fine on social media giant over data misuse",
-    excerpt: "Regulators say the platform failed to protect users from targeted political advertising.",
-    category: "Europe",
-  },
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/t4/400/250",
-    title: "Quantum computing breakthrough could crack today's encryption",
-    excerpt: "Scientists say a new qubit architecture brings practical quantum computing much closer to reality.",
-    category: "Science",
-  },
-]
+async function fetchSectionLabels(): Promise<Record<string, string>> {
+  try {
+    const res = await fetch(`${BACKEND}/api/section-labels`, { cache: "no-store" })
+    if (!res.ok) return {}
+    return res.json()
+  } catch {
+    return {}
+  }
+}
+
+interface HomepageSection {
+  _id: string
+  label: string
+  categorySlug: string
+  maxArticles: number
+}
+
+interface CategoryItem {
+  slug: string
+  title: string
+}
+
+async function fetchHomepageSections(): Promise<HomepageSection[]> {
+  try {
+    const res = await fetch(`${BACKEND}/api/homepage-sections`, { next: { revalidate: 60 } })
+    if (!res.ok) return []
+    return res.json()
+  } catch {
+    return []
+  }
+}
+
+async function fetchVisibleCategories(): Promise<CategoryItem[]> {
+  try {
+    const res = await fetch(`${BACKEND}/api/categories`, { next: { revalidate: 60 } })
+    if (!res.ok) return []
+    return res.json()
+  } catch {
+    return []
+  }
+}
+
+// Resolve title: prefer English, fall back to Hindi
+function resolveTitle(a: any): string {
+  return (a.title?.trim() || a.titleHindi?.trim() || "")
+}
+
+// Resolve excerpt: prefer English, fall back to Hindi
+function resolveExcerpt(a: any): string {
+  return (a.excerpt?.trim() || a.excerptHindi?.trim() || "")
+}
+
+function toFourGridItems(articles: any[]) {
+  return articles
+    .map((a: any) => ({
+      slug: `/article/${a.slug?.current ?? a.slug}`,
+      image: a.mainImage
+        ? urlFor(a.mainImage).width(1600).quality(90).auto("format").url()
+        : PLACEHOLDER,
+      title: resolveTitle(a),
+      excerpt: resolveExcerpt(a),
+      category: a.categories?.[0]?.title ?? "",
+    }))
+    .filter((a) => a.title) // skip articles with no title at all
+}
 
 export default async function HomePage() {
-  const hero = await client.fetch(heroQuery)
-  const featured = await client.fetch(featuredQuery)
-  const sidebar = await client.fetch(sidebarQuery)
+  // Fetch placements (hero / featured / sidebar)
+  const placements = await fetchPlacements()
+  const hero     = toHeroArticle(placements["hero"] || [])
+  const featured = toFeaturedArticles(placements["featured"] || [])
+  const sidebar  = toSidebarArticles(placements["sidebar"] || [])
+
+  // Fetch admin-customised section labels (overrides defaults)
+  const backendLabels = await fetchSectionLabels()
+  const resolvedLabels = { ...DEFAULT_SECTION_LABELS, ...backendLabels }
+
+  // Fetch admin-defined homepage sections. Only render sections explicitly
+  // configured by the admin; do NOT auto-fall back to Sanity or visible
+  // categories so the homepage shows only manually chosen sections.
+  const configuredSections = await fetchHomepageSections()
+
+  const effectiveSections: HomepageSection[] = configuredSections
+  const sectionArticles: any[][] = effectiveSections.length
+    ? await Promise.all(
+        effectiveSections.map((sec) =>
+          client.fetch(articlesByCategoryQuery, {
+            categorySlug: sec.categorySlug,
+            limit: sec.maxArticles,
+          })
+        )
+      )
+    : []
 
   return (
     <main className="bg-white">
@@ -115,55 +166,28 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <hr className="border-gray-200 max-w-screen-xl mx-auto" />
+      {/* ── PLACEMENT-BASED SECTIONS (newsroom / politics / technology …) ─ */}
+      {GRID_SECTION_KEYS.map((key) => {
+        const items = placements[key] ? placementToGrid(placements[key]) : []
+        if (items.length === 0) return null
+        return (
+          <div key={key}>
+            <hr className="border-gray-200 max-w-screen-xl mx-auto" />
+            <FourGrid title={resolvedLabels[key] || key} items={items} />
+          </div>
+        )
+      })}
 
-      {/* ── ONLY FROM THE NEWSROOM ─────────────────────── */}
-      <FeaturedTwoUp title="Only from the Newsroom" />
-
-      <hr className="border-gray-200 max-w-screen-xl mx-auto" />
-
-      {/* ── WINTER OLYMPICS ───────────────────────────── */}
-      <FourGrid title="Winter Olympics" items={winterOlympicsItems} />
-
-      <hr className="border-gray-200 max-w-screen-xl mx-auto" />
-
-      {/* ── MORE NEWS ─────────────────────────────────── */}
-      <MoreNewsSection title="More News" />
-
-      <hr className="border-gray-200 max-w-screen-xl mx-auto" />
-
-      {/* ── MUST WATCH (dark) ─────────────────────────── */}
-      <MustWatch />
-
-      {/* ── SCIENCE FEATURE ───────────────────────────── */}
-      <hr className="border-gray-200 max-w-screen-xl mx-auto" />
-      <FeatureStory
-        title="Science"
-        image="https://picsum.photos/seed/sci1/900/550"
-        headline="The toddlers saving an endangered Sámi language"
-        excerpt="Special nurseries are helping the Sámi people in Finland to bring their almost-lost language back from the brink of extinction."
-        slug="#"
-        ctaLabel="See more"
-      />
-
-      <hr className="border-gray-200 max-w-screen-xl mx-auto" />
-
-      {/* ── TECHNOLOGY ────────────────────────────────── */}
-      <FourGrid title="Technology" items={techItems} />
-
-      <hr className="border-gray-200 max-w-screen-xl mx-auto" />
-
-      {/* ── TRAVEL FEATURE ────────────────────────────── */}
-      <FeatureStory
-        title="Travel"
-        image="https://picsum.photos/seed/tr1/900/550"
-        headline="The island nations racing to relocate before the seas rise"
-        excerpt="From the Maldives to Tuvalu, small island states are drawing up radical plans to move entire populations as climate change accelerates."
-        slug="#"
-        ctaLabel="Explore"
-      />
-
-      <hr className="border-gray-200 max-w-screen-xl mx-auto" />
+      {/* ── DYNAMIC CATEGORY SECTIONS (admin Homepage Layout tab) ────────── */}
+      {effectiveSections.map((sec, idx) => {
+        const items = toFourGridItems(sectionArticles[idx] || [])
+        return (
+          <div key={sec._id}>
+            <hr className="border-gray-200 max-w-screen-xl mx-auto" />
+            <FourGrid title={sec.label} items={items} />
+          </div>
+        )
+      })}
 
       {/* ── BOTTOM PADDING ────────────────────────────── */}
       <div className="h-12" />

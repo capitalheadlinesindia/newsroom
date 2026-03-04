@@ -1,11 +1,12 @@
 import { client, urlFor } from "@/app/lib/sanity"
 import { articleBySlug, relatedArticlesQuery } from "@/app/lib/queries"
-import { PortableText } from "@portabletext/react"
+import ArticleBodyToggle from "@/app/components/ArticleBodyToggle"
 import Image from "next/image"
 import Link from "next/link"
 
 export default async function ArticlePage({ params }: any) {
-  const article = await client.fetch(articleBySlug, { slug: params.slug })
+  const { slug } = await params
+  const article = await client.fetch(articleBySlug, { slug })
 
   if (!article) {
     return (
@@ -16,18 +17,22 @@ export default async function ArticlePage({ params }: any) {
     )
   }
 
-  const related = article.category?.slug?.current
+  const primaryCategory = article.categories?.[0]
+
+  const related = primaryCategory?.slug?.current
     ? await client.fetch(relatedArticlesQuery, {
-        category: article.category.slug.current,
-        slug: params.slug,
+        category: primaryCategory.slug.current,
+        slug,
       })
     : []
 
-  const publishedDate = new Date(article.publishedAt).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  })
+  const publishedDate = article.publishedAt
+    ? new Date(article.publishedAt).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : ""
 
   const wordCount = article.body
     ? article.body
@@ -38,6 +43,10 @@ export default async function ArticlePage({ params }: any) {
     : 0
   const readingTime = Math.max(1, Math.ceil(wordCount / 200))
 
+  const imageUrl = article.mainImage
+    ? urlFor(article.mainImage).width(1200).url()
+    : null
+
   return (
     <main className="bg-white min-h-screen">
       <div className="max-w-screen-xl mx-auto px-4 py-8">
@@ -46,17 +55,17 @@ export default async function ArticlePage({ params }: any) {
           {/* ── MAIN ARTICLE ─────────────────────────────── */}
           <article className="flex-1 min-w-0">
 
-            {/* Breadcrumb */}
+            {/* Breadcrumb — always English */}
             <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
               <Link href="/" className="hover:underline">Home</Link>
               <span>›</span>
-              {article.category && (
+              {primaryCategory && (
                 <>
                   <Link
-                    href={`/category/${article.category.slug?.current}`}
+                    href={`/category/${primaryCategory.slug?.current}`}
                     className="hover:underline text-[#bb1919] font-bold uppercase tracking-wide"
                   >
-                    {article.category.title}
+                    {primaryCategory.title}
                   </Link>
                   <span>›</span>
                 </>
@@ -64,80 +73,32 @@ export default async function ArticlePage({ params }: any) {
               <span className="truncate max-w-[200px]">{article.title}</span>
             </div>
 
-            {/* Category label */}
-            {article.category && (
-              <Link href={`/category/${article.category.slug?.current}`}>
-                <span className="inline-block text-xs font-bold uppercase tracking-widest text-[#bb1919] mb-3">
-                  {article.category.title}
-                </span>
-              </Link>
-            )}
-
-            {/* Title */}
-            <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-black mb-4">
-              {article.title}
-            </h1>
-
-            {/* Excerpt */}
-            {article.excerpt && (
-              <p className="text-lg text-gray-600 leading-relaxed mb-6 border-l-4 border-gray-900 pl-4">
-                {article.excerpt}
-              </p>
-            )}
-
-            {/* Meta row */}
-            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-6 pb-4 border-b border-gray-200">
-              {article.author?.name && (
-                <span>
-                  By{" "}
-                  <span className="font-bold text-black">{article.author.name}</span>
-                </span>
-              )}
-              <span className="w-px h-4 bg-gray-300" />
-              <time>{publishedDate}</time>
-              <span className="w-px h-4 bg-gray-300" />
-              <span>{readingTime} min read</span>
-
-              {/* Share buttons */}
-              <div className="ml-auto flex items-center gap-2">
-                <button className="w-8 h-8 rounded-full bg-[#1877f2] text-white text-xs flex items-center justify-center font-bold hover:opacity-80">f</button>
-                <button className="w-8 h-8 rounded-full bg-black text-white text-xs flex items-center justify-center font-bold hover:opacity-80">𝕏</button>
-                <button className="w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs flex items-center justify-center hover:opacity-80">✉</button>
-              </div>
-            </div>
-
-            {/* Hero image */}
-            {article.mainImage && (
-              <div className="mb-8">
-                <Image
-                  src={urlFor(article.mainImage).width(1200).url()}
-                  alt={article.mainImage?.alt || article.title}
-                  width={1200}
-                  height={675}
-                  className="w-full object-cover"
-                  priority
-                />
-                {article.mainImage?.caption && (
-                  <p className="text-xs text-gray-500 mt-2">{article.mainImage.caption}</p>
-                )}
-              </div>
-            )}
-
-            {/* Body */}
-            {article.body && (
-              <div className="article-body max-w-2xl">
-                <PortableText value={article.body} />
-              </div>
-            )}
+            {/* All language-switchable content (title, excerpt, meta, image, body) */}
+            <ArticleBodyToggle
+              title={article.title}
+              titleHindi={article.titleHindi ?? null}
+              excerpt={article.excerpt ?? null}
+              excerptHindi={article.excerptHindi ?? null}
+              body={article.body}
+              bodyHindi={article.bodyHindi ?? null}
+              primaryCategory={primaryCategory ?? null}
+              imageUrl={imageUrl}
+              imageAlt={article.mainImage?.alt || article.title}
+              imageCaption={article.mainImage?.caption ?? null}
+              mainImageRef={article.mainImage?.asset?._ref ?? null}
+              authorName={article.author?.name ?? null}
+              publishedDate={publishedDate}
+              readingTime={readingTime}
+            />
 
             {/* Tags / bottom share */}
             <div className="mt-10 pt-6 border-t border-gray-200 flex flex-wrap items-center gap-3">
-              {article.category && (
+              {primaryCategory && (
                 <Link
-                  href={`/category/${article.category.slug?.current}`}
+                  href={`/category/${primaryCategory.slug?.current}`}
                   className="border border-gray-300 text-xs px-3 py-1 font-semibold hover:bg-gray-100 transition"
                 >
-                  {article.category.title}
+                  {primaryCategory.title}
                 </Link>
               )}
               <div className="ml-auto flex items-center gap-2">
@@ -191,13 +152,12 @@ export default async function ArticlePage({ params }: any) {
                   ))}
                 </div>
 
-                {/* Back to category */}
-                {article.category && (
+                {primaryCategory && (
                   <Link
-                    href={`/category/${article.category.slug?.current}`}
+                    href={`/category/${primaryCategory.slug?.current}`}
                     className="mt-4 inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-black border border-black px-4 py-2 hover:bg-black hover:text-white transition"
                   >
-                    More {article.category.title} ›
+                    More {primaryCategory.title} ›
                   </Link>
                 )}
               </div>
@@ -210,4 +170,3 @@ export default async function ArticlePage({ params }: any) {
     </main>
   )
 }
-

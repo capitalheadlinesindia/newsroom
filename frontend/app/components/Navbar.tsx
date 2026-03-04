@@ -1,30 +1,32 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
 
-const categories = [
-  { label: "Home", href: "/" },
-  { label: "News", href: "/category/news" },
-  { label: "Sport", href: "/category/sport" },
-  { label: "Business", href: "/category/business" },
-  { label: "Technology", href: "/category/technology" },
-  { label: "Health", href: "/category/health" },
-  { label: "Culture", href: "/category/culture" },
-  { label: "Arts", href: "/category/arts" },
-  { label: "Travel", href: "/category/travel" },
-  { label: "Earth", href: "/category/earth" },
-  { label: "Audio", href: "/category/audio" },
-  { label: "Video", href: "/category/video" },
-  { label: "Live", href: "/category/live" },
-]
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
 
 export default function Navbar() {
   const pathname = usePathname()
+  const [cats, setCats] = useState<Array<any>>([])
+
+  useEffect(() => {
+    let mounted = true
+    fetch(`${BACKEND}/api/categories?location=navbar`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!mounted) return
+        setCats(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {})
+    return () => { mounted = false }
+  }, [])
+
+  const items = [{ label: "Home", href: "/" }, ...cats.map((c: any) => ({ label: c.title, href: `/category/${c.slug}` }))]
 
   return (
     <nav className="bg-white border-b border-gray-200">
       <div className="max-w-screen-xl mx-auto px-4 flex items-center overflow-x-auto scrollbar-hide md:justify-center gap-0">
-        {categories.map((cat) => {
+        {items.map((cat) => {
           const isActive =
             cat.href === "/"
               ? pathname === "/"

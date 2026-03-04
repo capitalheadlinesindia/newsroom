@@ -1,27 +1,10 @@
 import Link from "next/link"
 
-const footerLinks = [
-  {
-    heading: "News",
-    links: ["World", "UK", "Business", "Politics", "Tech", "Science", "Health", "Education"],
-  },
-  {
-    heading: "Sport",
-    links: ["Football", "Cricket", "Formula 1", "Rugby Union", "Tennis", "Golf", "Athletics"],
-  },
-  {
-    heading: "Culture",
-    links: ["Film", "Music", "TV & Radio", "Arts", "Books", "Style"],
-  },
-  {
-    heading: "Travel",
-    links: ["Destinations", "Adventure", "Food & Drink", "Hotels", "City guides"],
-  },
-]
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
 
 const legalLinks = [
   "Terms of Use",
-  "About Newsroom",
+  "About Capital Headlines",
   "Privacy Policy",
   "Cookies",
   "Accessibility Help",
@@ -29,61 +12,56 @@ const legalLinks = [
   "Advertise with Us",
 ]
 
-export default function Footer() {
+export default async function Footer() {
+  let cats: any[] = []
+  try {
+    const res = await fetch(`${BACKEND}/api/categories?location=footer`, { next: { revalidate: 60 } })
+    if (res.ok) cats = await res.json()
+  } catch {}
+
   return (
     <footer className="bg-[#111] text-white mt-12">
 
-      {/* Top logo bar */}
-      <div className="max-w-screen-xl mx-auto px-4 py-6 border-b border-gray-700 flex items-center gap-2">
-        <Link href="/" className="flex gap-[2px]">
-          {["N","E","W","S"].map((letter) => (
-            <span
-              key={letter}
-              className="flex items-center justify-center w-8 h-8 bg-white text-black font-extrabold text-sm select-none"
-            >
-              {letter}
-            </span>
-          ))}
+      {/* Top branding bar */}
+      <div className="max-w-screen-xl mx-auto px-4 py-8 border-b border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <Link href="/" className="flex flex-col leading-none select-none w-fit">
+          <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400">Capital</span>
+          <span className="font-serif font-black text-[26px] tracking-tight text-white uppercase">Headlines</span>
+          <span className="block h-[3px] w-full bg-[#bb1919] mt-[2px]" />
         </Link>
-        <span className="text-gray-400 text-xs ml-2">© 2026 Newsroom. All rights reserved.</span>
+        <p className="text-gray-400 text-sm max-w-sm">
+          Breaking news, in-depth analysis and latest updates from India and around the world.
+        </p>
       </div>
 
-      {/* Link columns */}
-      <div className="max-w-screen-xl mx-auto px-4 py-8 grid grid-cols-2 sm:grid-cols-4 gap-8">
-        {footerLinks.map((col) => (
-          <div key={col.heading}>
-            <h3 className="text-white font-bold text-sm uppercase tracking-widest mb-3">
-              {col.heading}
-            </h3>
-            <ul className="space-y-2">
-              {col.links.map((l) => (
-                <li key={l}>
-                  <Link
-                    href="#"
-                    className="text-gray-400 text-sm hover:text-white transition"
-                  >
-                    {l}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+      {/* Categories */}
+      {cats.length > 0 && (
+        <div className="max-w-screen-xl mx-auto px-4 py-8 border-b border-gray-700">
+          <h3 className="text-white font-bold text-xs uppercase tracking-widest mb-4">Topics</h3>
+          <div className="flex flex-wrap gap-3">
+            {cats.map((c: any) => (
+              <Link
+                key={c.slug}
+                href={`/category/${c.slug}`}
+                className="text-gray-400 text-sm hover:text-white border border-gray-700 px-3 py-1 hover:border-gray-400 transition"
+              >
+                {c.title}
+              </Link>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Legal bar */}
-      <div className="border-t border-gray-700">
-        <div className="max-w-screen-xl mx-auto px-4 py-4 flex flex-wrap gap-x-5 gap-y-2">
-          {legalLinks.map((l) => (
-            <Link
-              key={l}
-              href="#"
-              className="text-gray-500 text-xs hover:text-gray-300 transition"
-            >
-              {l}
-            </Link>
-          ))}
-        </div>
+      <div className="max-w-screen-xl mx-auto px-4 py-5 flex flex-wrap items-center gap-x-5 gap-y-2">
+        {legalLinks.map((l) => (
+          <Link key={l} href="#" className="text-gray-500 text-xs hover:text-gray-300 transition">
+            {l}
+          </Link>
+        ))}
+        <span className="ml-auto text-gray-600 text-xs">
+          © {new Date().getFullYear()} Capital Headlines. All rights reserved.
+        </span>
       </div>
 
     </footer>

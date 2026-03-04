@@ -2,29 +2,14 @@ import Image from "next/image"
 import Link from "next/link"
 import SectionHeader from "./SectionHeader"
 
-const stories = [
-  {
-    slug: "/article/historic-us-home-super-rich",
-    image: "https://picsum.photos/seed/f1/800/500",
-    title: "The historic US home that embodied the super-rich",
-    excerpt:
-      "The largest privately owned home in the US, Biltmore House was an \"American chateau built on the scale of a European palace\". It reveals much about the dreams of the US's one per cent.",
-  },
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/f2/800/500",
-    title: "Extreme ways countries are combatting overtourism",
-    excerpt:
-      "As global travel surges toward 1.8 billion arrivals, destinations are testing controversial new measures to control the crowds.",
-  },
-]
+type Story = { slug: string; image: string; title: string; excerpt: string }
 
-export default function FeaturedTwoUp({ title }: { title: string }) {
+export default function FeaturedTwoUp({ title, items = [] }: { title: string; items?: Story[] }) {
   return (
     <section className="max-w-screen-xl mx-auto px-4 py-8">
       <SectionHeader title={title} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {stories.map((s) => (
+        {items.map((s) => (
           <Link href={s.slug} key={s.title}>
             <article className="group cursor-pointer">
               <div className="overflow-hidden">

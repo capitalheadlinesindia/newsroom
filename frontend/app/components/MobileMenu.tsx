@@ -1,23 +1,11 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
-const categories = [
-  { label: "Home", href: "/", hasChevron: false },
-  { label: "News", href: "/category/news", hasChevron: true },
-  { label: "Sport", href: "/category/sport", hasChevron: false },
-  { label: "Business", href: "/category/business", hasChevron: true },
-  { label: "Technology", href: "/category/technology", hasChevron: true },
-  { label: "Health", href: "/category/health", hasChevron: false },
-  { label: "Culture", href: "/category/culture", hasChevron: true },
-  { label: "Arts", href: "/category/arts", hasChevron: true },
-  { label: "Travel", href: "/category/travel", hasChevron: true },
-  { label: "Earth", href: "/category/earth", hasChevron: true },
-  { label: "Audio", href: "/category/audio", hasChevron: true },
-  { label: "Video", href: "/category/video", hasChevron: true },
-  { label: "Live", href: "/category/live", hasChevron: false },
-]
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
+
+const buildItems = (cats: any[]) => [{ label: "Home", href: "/", hasChevron: false }, ...cats.map(c => ({ label: c.title, href: `/category/${c.slug}`, hasChevron: true }))]
 
 export default function MobileMenu({
   isOpen,
@@ -28,6 +16,19 @@ export default function MobileMenu({
 }) {
   const pathname = usePathname()
   const [search, setSearch] = useState("")
+  const [items, setItems] = useState<any[]>([])
+
+  useEffect(() => {
+    let mounted = true
+    fetch(`${BACKEND}/api/categories?location=navbar`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!mounted) return
+        setItems(buildItems(Array.isArray(data) ? data : []))
+      })
+      .catch(() => {})
+    return () => { mounted = false }
+  }, [])
 
   return (
     <>
@@ -84,7 +85,7 @@ export default function MobileMenu({
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto">
-          {categories.map((cat) => {
+          {items.map((cat) => {
             const isActive =
               cat.href === "/"
                 ? pathname === "/"

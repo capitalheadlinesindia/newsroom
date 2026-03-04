@@ -30,27 +30,19 @@ export default function Header() {
             </button>
           </div>
 
-          {/* Center: block logo */}
-          <Link href="/" className="flex gap-[2px]">
-            {["N","E","W","S"].map((letter) => (
-              <span
-                key={letter}
-                className="flex items-center justify-center w-9 h-9 bg-black text-white font-extrabold text-base select-none"
-              >
-                {letter}
-              </span>
-            ))}
+          {/* Center: Capital Headlines wordmark */}
+          <Link href="/" className="flex flex-col items-center leading-none select-none">
+            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-500">
+              Capital
+            </span>
+            <span className="font-serif font-black text-[22px] tracking-tight text-black uppercase">
+              Headlines
+            </span>
+            <span className="block h-[3px] w-full bg-[#bb1919] mt-[2px]" />
           </Link>
 
-          {/* Right: Register + Sign In */}
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button className="bg-black text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-[6px] hover:bg-gray-800 whitespace-nowrap">
-              Register
-            </button>
-            <button className="hidden sm:block text-sm font-bold hover:underline whitespace-nowrap">
-              Sign In
-            </button>
-          </div>
+          {/* Right: spacer for layout balance */}
+          <div className="w-[80px]" />
 
         </div>
       </header>

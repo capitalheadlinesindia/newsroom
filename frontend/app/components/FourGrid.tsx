@@ -18,16 +18,20 @@ export default function FourGrid({ title, items }: FourGridProps) {
   return (
     <section className="max-w-screen-xl mx-auto px-4 py-8">
       <SectionHeader title={title} />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {items.map((item) => (
+      {items.length === 0 ? (
+        <p className="text-sm text-gray-400 italic py-4">No articles in this section yet.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {items.map((item) => (
           <Link href={item.slug} key={item.title}>
             <article className="group cursor-pointer">
               <div className="overflow-hidden relative">
                 <Image
                   src={item.image}
                   alt={item.title}
-                  width={400}
-                  height={250}
+                  width={800}
+                  height={500}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   className="w-full h-44 object-cover group-hover:opacity-95 transition"
                 />
               </div>
@@ -55,7 +59,8 @@ export default function FourGrid({ title, items }: FourGridProps) {
             </article>
           </Link>
         ))}
-      </div>
+        </div>
+      )}
     </section>
   )
 }

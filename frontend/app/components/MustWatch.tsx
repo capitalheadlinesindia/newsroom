@@ -2,49 +2,9 @@ import Image from "next/image"
 import Link from "next/link"
 import SectionHeader from "./SectionHeader"
 
-const videos = [
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/v1/400/250",
-    title: "Thai police go undercover as lion dancers to catch thief",
-    excerpt:
-      "The suspect was caught outside a temple on the outskirts of Bangkok.",
-    category: "Asia",
-  },
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/v2/400/250",
-    title: "Margot Robbie's accent was 'too Australian' for Neighbours",
-    excerpt:
-      "The actress reveals that she had a dialect coach when she was on the series because her accent was so strong.",
-    category: "Film & TV",
-  },
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/v3/400/250",
-    title: "US kids talk about chasing Olympic glory alongside elite figure skaters",
-    excerpt:
-      "They skate in the same rink as Ilia Malinin, and they're dreaming of their shot at Olympic medals.",
-    category: "US & Canada",
-  },
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/v4/400/250",
-    title: "'We can never do too much' - Slot wants football to do more against racism",
-    excerpt:
-      "Liverpool head coach Arne Slot says \"we should always try to do more\" after Real Madrid's Vinicius Jr allegedly received racist abuse.",
-    category: "Champions League",
-  },
-  {
-    slug: "#",
-    image: "https://picsum.photos/seed/v5/400/250",
-    title: "Martial law, president tried — how did South Korea get here?",
-    excerpt: "A court is due to decide on a landmark case following the insurrection attempt.",
-    category: "Asia",
-  },
-]
+type Video = { slug: string; image: string; title: string; excerpt: string; category?: string }
 
-export default function MustWatch() {
+export default function MustWatch({ items = [] }: { items?: Video[] }) {
   return (
     <section className="bg-[#111] py-8">
       <div className="max-w-screen-xl mx-auto px-4">
@@ -62,8 +22,8 @@ export default function MustWatch() {
 
         {/* Scrollable row */}
         <div className="flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
-          {videos.map((v) => (
-            <Link href={v.slug} key={v.title} className="flex-shrink-0 w-72 sm:w-80">
+          {items.map((v) => (
+            <Link href={v.slug} key={v.title} className="shrink-0 w-72 sm:w-80">
               <article className="group cursor-pointer">
                 <div className="relative overflow-hidden">
                   <Image

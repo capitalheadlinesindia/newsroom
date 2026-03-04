@@ -1,4 +1,12 @@
 import Link from "next/link"
+import Image from "next/image"
+import { urlFor } from "@/app/lib/sanity"
+
+function resolveUrl(image: any, width = 80): string | null {
+  if (!image) return null
+  if (typeof image === "string") return image
+  return urlFor(image).width(width).url()
+}
 
 function timeAgo(dateString: string) {
   const now = new Date()
@@ -22,9 +30,9 @@ export default function SidebarItem({ article }: any) {
         <span className="mt-[6px] w-2 h-2 rounded-full bg-gray-400 flex-shrink-0"></span>
 
         <div>
-          {article.category && (
+          {article.categories?.[0] && (
             <p className="text-[11px] font-bold uppercase text-[#bb1919] mb-[2px] tracking-wide">
-              {article.category.title}
+              {article.categories[0].title}
             </p>
           )}
 
