@@ -79,7 +79,14 @@ export default function ArticleBodyToggle({
     !!excerptHindi ||
     (Array.isArray(bodyHindi) && bodyHindi.length > 0)
 
-  const [lang, setLang] = useState<"en" | "hi">("en")
+  const hasEnglish =
+    !!(title && title.toString().trim()) ||
+    !!(excerpt && excerpt.toString().trim()) ||
+    (Array.isArray(body) && body.length > 0)
+
+  // Default to Hindi if the article has only Hindi content (no English available)
+  const initialLang: "en" | "hi" = !hasEnglish && hasHindi ? "hi" : "en"
+  const [lang, setLang] = useState<"en" | "hi">(initialLang)
 
   const activeTitle = lang === "hi" && titleHindi ? titleHindi : title
   const activeExcerpt = lang === "hi" && excerptHindi ? excerptHindi : excerpt
@@ -91,7 +98,8 @@ export default function ArticleBodyToggle({
   return (
     <>
       {/* ── Language toggle ──────────────────────────────── */}
-      {hasHindi && (
+      {/* Show toggle only when BOTH languages are available */}
+      {hasHindi && hasEnglish && (
         <div className="flex items-center gap-3 mb-5">
           <span className="text-xs font-bold uppercase tracking-widest text-gray-500">
             Read in:
@@ -171,7 +179,7 @@ export default function ArticleBodyToggle({
         <div className="mb-8">
           <Image
             src={imageUrl}
-            alt={imageAlt || title}
+            alt={imageAlt || title || titleHindi || "Article image"}
             width={1200}
             height={675}
             className="w-full object-cover"
