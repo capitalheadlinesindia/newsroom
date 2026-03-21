@@ -18,6 +18,7 @@ interface Props {
   primaryCategory?: { title: string; slug?: { current: string } } | null
   // Image (pre-resolved URL from server)
   imageUrl?: string | null
+  heroYouTubeUrl?: string | null
   imageAlt?: string
   imageCaption?: string | null
   // Asset ref of the hero image — body blocks matching this ref will be skipped
@@ -37,6 +38,7 @@ export default function ArticleBodyToggle({
   bodyHindi,
   primaryCategory,
   imageUrl,
+  heroYouTubeUrl,
   imageAlt,
   imageCaption,
   mainImageRef,
@@ -44,6 +46,35 @@ export default function ArticleBodyToggle({
   publishedDate,
   readingTime,
 }: Props) {
+  function getYouTubeEmbedUrl(url: string | null | undefined): string | null {
+    if (!url) return null
+    try {
+      const u = new URL(url)
+      const host = u.hostname.replace(/^www\./, "")
+      if (host === "youtu.be") {
+        const id = u.pathname.slice(1)
+        return id ? `https://www.youtube.com/embed/${id}` : null
+      }
+      if (host.includes("youtube.com")) {
+        if (u.pathname === "/watch") {
+          const id = u.searchParams.get("v")
+          return id ? `https://www.youtube.com/embed/${id}` : null
+        }
+        if (u.pathname.startsWith("/shorts/")) {
+          const id = u.pathname.split("/")[2]
+          return id ? `https://www.youtube.com/embed/${id}` : null
+        }
+        if (u.pathname.startsWith("/embed/")) {
+          const id = u.pathname.split("/")[2]
+          return id ? `https://www.youtube.com/embed/${id}` : null
+        }
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
   // Custom PortableText components — render body images with Next/Image,
   // but skip the one that's already shown as the hero above.
   const ptComponents = {
@@ -71,6 +102,27 @@ export default function ArticleBodyToggle({
         } catch {
           return null
         }
+      },
+      youtubeEmbed: ({ value }: any) => {
+        const embedUrl = getYouTubeEmbedUrl(value?.url)
+        if (!embedUrl) return null
+        return (
+          <div className="my-6">
+            <div className="relative w-full pt-[56.25%] overflow-hidden bg-black">
+              <iframe
+                src={embedUrl}
+                title={value?.title || "YouTube video"}
+                className="absolute inset-0 h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
+            {value?.title && (
+              <p className="text-xs text-gray-500 mt-2">{value.title}</p>
+            )}
+          </div>
+        )
       },
     },
   }
@@ -174,21 +226,36 @@ export default function ArticleBodyToggle({
         </div>
       </div>
 
-      {/* ── Hero image ───────────────────────────────────── */}
-      {imageUrl && (
+      {/* ── Hero media (YouTube takes priority over image) ───────────────── */}
+      {getYouTubeEmbedUrl(heroYouTubeUrl) ? (
         <div className="mb-8">
-          <Image
-            src={imageUrl}
-            alt={imageAlt || title || titleHindi || "Article image"}
-            width={1200}
-            height={675}
-            className="w-full object-cover"
-            priority
-          />
-          {imageCaption && (
-            <p className="text-xs text-gray-500 mt-2">{imageCaption}</p>
-          )}
+          <div className="relative w-full pt-[56.25%] overflow-hidden bg-black">
+            <iframe
+              src={getYouTubeEmbedUrl(heroYouTubeUrl)!}
+              title={title || titleHindi || "Article video"}
+              className="absolute inset-0 h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            />
+          </div>
         </div>
+      ) : (
+        imageUrl && (
+          <div className="mb-8">
+            <Image
+              src={imageUrl}
+              alt={imageAlt || title || titleHindi || "Article image"}
+              width={1200}
+              height={675}
+              className="w-full object-cover"
+              priority
+            />
+            {imageCaption && (
+              <p className="text-xs text-gray-500 mt-2">{imageCaption}</p>
+            )}
+          </div>
+        )
       )}
 
       {/* ── Body ─────────────────────────────────────────── */}

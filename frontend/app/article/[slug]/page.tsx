@@ -83,6 +83,7 @@ export default async function ArticlePage({ params }: any) {
               bodyHindi={article.bodyHindi ?? null}
               primaryCategory={primaryCategory ?? null}
               imageUrl={imageUrl}
+              heroYouTubeUrl={article.heroYouTubeUrl ?? null}
               imageAlt={article.mainImage?.alt || article.title}
               imageCaption={article.mainImage?.caption ?? null}
               mainImageRef={article.mainImage?.asset?._ref ?? null}
