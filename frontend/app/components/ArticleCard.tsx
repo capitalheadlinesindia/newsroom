@@ -11,14 +11,17 @@ function resolveUrl(image: any, width = 1600): string | null {
 export default function ArticleCard({ article }: any) {
   const imageUrl = resolveUrl(article.mainImage)
   return (
-    <Link href={`/article/${article.slug.current}`}>
-      <article className="group cursor-pointer border-b border-gray-200 pb-4 flex sm:flex-row flex-col gap-3 items-start">
+    <Link
+      href={`/article/${article.slug.current}`}
+      className="block no-underline hover:no-underline focus:no-underline"
+    >
+      <article className="group cursor-pointer border-b border-gray-200 py-4 first:pt-2 flex flex-row gap-3 items-start">
 
         {imageUrl && (
-          <div className="flex-shrink-0 w-full sm:w-24 h-40 sm:h-16 overflow-hidden">
+          <div className="shrink-0 w-28 h-20 sm:w-24 sm:h-16 overflow-hidden mt-1">
             <Image
               src={imageUrl}
-              alt={article.mainImage?.alt || ""}
+              alt={article.mainImage?.alt || article.title || "Article image"}
               width={300}
               height={200}
               className="w-full h-full object-cover"
@@ -27,14 +30,14 @@ export default function ArticleCard({ article }: any) {
         )}
 
         <div className="flex-1 min-w-0">
-          {article.categories?.[0]?.title && (
-            <p className="text-[11px] font-bold uppercase text-[#bb1919] mb-1 tracking-wide">
-              {article.categories[0].title}
-            </p>
-          )}
-          <h3 className="font-serif text-[15px] font-bold leading-snug group-hover:underline text-black">
+          <h3 className="font-serif text-[16px] sm:text-[15px] font-bold leading-snug text-black line-clamp-4 sm:line-clamp-3 group-hover:underline">
             {article.title}
           </h3>
+          {article.excerpt && (
+            <p className="mt-1 text-[13px] leading-snug text-gray-600 line-clamp-2">
+              {article.excerpt}
+            </p>
+          )}
         </div>
 
       </article>

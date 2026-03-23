@@ -85,17 +85,40 @@ export default function ArticleBodyToggle({
         if (mainImageRef && value.asset._ref === mainImageRef) return null
         try {
           const src = urlFor(value).width(800).url()
+          const linkUrl = typeof value?.linkUrl === "string" ? value.linkUrl : null
           return (
             <div className="my-6">
-              <Image
-                src={src}
-                alt={value.alt || ""}
-                width={800}
-                height={500}
-                className="w-full object-cover"
-              />
+              {linkUrl ? (
+                <a href={linkUrl} target="_blank" rel="noopener noreferrer">
+                  <Image
+                    src={src}
+                    alt={value.alt || ""}
+                    width={800}
+                    height={500}
+                    className="w-full object-cover"
+                  />
+                </a>
+              ) : (
+                <Image
+                  src={src}
+                  alt={value.alt || ""}
+                  width={800}
+                  height={500}
+                  className="w-full object-cover"
+                />
+              )}
               {value.caption && (
                 <p className="text-xs text-gray-500 mt-2">{value.caption}</p>
+              )}
+              {linkUrl && (
+                <a
+                  href={linkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-block text-xs font-semibold text-[#bb1919] hover:underline"
+                >
+                  Open image link
+                </a>
               )}
             </div>
           )
@@ -120,6 +143,16 @@ export default function ArticleBodyToggle({
             </div>
             {value?.title && (
               <p className="text-xs text-gray-500 mt-2">{value.title}</p>
+            )}
+            {value?.linkUrl && (
+              <a
+                href={value.linkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-block text-xs font-semibold text-[#bb1919] hover:underline"
+              >
+                Open video link
+              </a>
             )}
           </div>
         )

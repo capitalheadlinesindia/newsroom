@@ -4,13 +4,28 @@ import ArticleBodyToggle from "@/app/components/ArticleBodyToggle"
 import Image from "next/image"
 import Link from "next/link"
 
+function resolveTitle(a: any): string {
+  return (a?.title?.trim() || a?.titleHindi?.trim() || "Untitled article")
+}
+
+function formatRelatedDate(dateString: string | undefined): string {
+  if (!dateString) return ""
+  const d = new Date(dateString)
+  if (Number.isNaN(d.getTime())) return ""
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  })
+}
+
 export default async function ArticlePage({ params }: any) {
   const { slug } = await params
   const article = await client.fetch(articleBySlug, { slug })
 
   if (!article) {
     return (
-      <div className="max-w-screen-xl mx-auto px-4 py-20 text-center">
+      <div className="max-w-7xl mx-auto px-4 py-20 text-center">
         <h1 className="text-3xl font-serif font-bold">Article not found</h1>
         <Link href="/" className="text-sm underline mt-4 inline-block">← Back to home</Link>
       </div>
@@ -49,7 +64,7 @@ export default async function ArticlePage({ params }: any) {
 
   return (
     <main className="bg-white min-h-screen">
-      <div className="max-w-screen-xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-10">
 
           {/* ── MAIN ARTICLE ─────────────────────────────── */}
@@ -70,7 +85,7 @@ export default async function ArticlePage({ params }: any) {
                   <span>›</span>
                 </>
               )}
-              <span className="truncate max-w-[200px]">{article.title}</span>
+              <span className="truncate max-w-50">{article.title}</span>
             </div>
 
             {/* All language-switchable content (title, excerpt, meta, image, body) */}
@@ -113,7 +128,7 @@ export default async function ArticlePage({ params }: any) {
           </article>
 
           {/* ── SIDEBAR ──────────────────────────────────── */}
-          <aside className="w-full lg:w-80 flex-shrink-0">
+          <aside className="w-full lg:w-80 shrink-0">
 
             {/* Related articles */}
             {related.length > 0 && (
@@ -124,14 +139,16 @@ export default async function ArticlePage({ params }: any) {
                   </h2>
                 </div>
                 <div className="space-y-4">
-                  {related.map((rel: any) => (
+                  {related.map((rel: any) => {
+                    const relatedDate = formatRelatedDate(rel.publishedAt)
+                    return (
                     <Link href={`/article/${rel.slug.current}`} key={rel.slug.current}>
                       <div className="group flex gap-3 items-start border-b border-gray-200 pb-4 cursor-pointer">
                         {rel.mainImage && (
-                          <div className="flex-shrink-0 w-20 h-14 overflow-hidden">
+                          <div className="shrink-0 w-20 h-14 overflow-hidden">
                             <Image
                               src={urlFor(rel.mainImage).width(200).url()}
-                              alt={rel.title}
+                              alt={resolveTitle(rel)}
                               width={200}
                               height={130}
                               className="w-full h-full object-cover"
@@ -140,17 +157,18 @@ export default async function ArticlePage({ params }: any) {
                         )}
                         <div className="flex-1 min-w-0">
                           <h3 className="font-serif text-sm font-bold leading-snug group-hover:underline text-black line-clamp-3">
-                            {rel.title}
+                            {resolveTitle(rel)}
                           </h3>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {new Date(rel.publishedAt).toLocaleDateString("en-GB", {
-                              day: "numeric", month: "short", year: "numeric"
-                            })}
-                          </p>
+                          {relatedDate && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              {relatedDate}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </Link>
-                  ))}
+                    )
+                  })}
                 </div>
 
                 {primaryCategory && (

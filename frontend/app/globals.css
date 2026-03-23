@@ -110,3 +110,43 @@ body {
   color: #888;
   margin-top: 0.4rem;
 }
+
+/* ── Latest news ticker ───────────────────────── */
+.news-ticker-wrap {
+  position: relative;
+  overflow-x: hidden;
+  width: 100%;
+  flex: 1;
+}
+
+.news-ticker-track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  animation: newsTickerMove 30s linear infinite;
+  will-change: transform;
+}
+
+.news-ticker-item {
+  font-size: 0.875rem;
+  color: #111;
+  white-space: nowrap;
+  padding-right: 1.5rem;
+  position: relative;
+}
+
+.news-ticker-item::after {
+  content: "•";
+  position: absolute;
+  right: 0.5rem;
+  color: #d1d5db;
+}
+
+@keyframes newsTickerMove {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50vw);
+  }
+}

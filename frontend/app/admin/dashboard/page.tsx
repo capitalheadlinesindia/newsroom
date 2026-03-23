@@ -48,21 +48,26 @@ interface HomepageSection {
   order: number
 }
 
+interface NewsTickerConfig {
+  enabled: boolean
+  items: string[]
+}
+
 type PlacementsMap = Record<string, Placement[]>
 
 // ── Section config ───────────────────────────────────────────────────────────
 
 const SECTIONS = [
   { key: "hero", label: "Hero", description: "Center spotlight — 1 article", maxSlots: 1 },
-  { key: "featured", label: "Featured", description: "Left column — up to 3 articles", maxSlots: 3 },
-  { key: "sidebar", label: "Sidebar", description: "Right column — up to 6 articles", maxSlots: 6 },
-  { key: "newsroom", label: "From the Newsroom", description: "2-up feature — 2 articles", maxSlots: 2 },
-  { key: "winterOlympics", label: "Winter Olympics", description: "4-grid — up to 4 articles", maxSlots: 4 },
-  { key: "technology", label: "Technology", description: "4-grid — up to 4 articles", maxSlots: 4 },
-  { key: "moreNews_left", label: "More News – Left", description: "Text list — up to 5 articles", maxSlots: 5 },
-  { key: "moreNews_center", label: "More News – Center", description: "Feature image — 1 article", maxSlots: 1 },
-  { key: "moreNews_right", label: "More News – Right", description: "Text list — up to 5 articles", maxSlots: 5 },
-  { key: "mustWatch", label: "Must Watch", description: "Video strip — up to 6 articles", maxSlots: 6 },
+  { key: "featured", label: "Featured", description: "Left column — up to 12 articles", maxSlots: 12 },
+  { key: "sidebar", label: "Sidebar", description: "Right column — up to 12 articles", maxSlots: 12 },
+  { key: "newsroom", label: "From the Newsroom", description: "Section carousel — up to 12 articles", maxSlots: 12 },
+  { key: "winterOlympics", label: "Winter Olympics", description: "Section carousel — up to 12 articles", maxSlots: 12 },
+  { key: "technology", label: "Technology", description: "Section carousel — up to 12 articles", maxSlots: 12 },
+  { key: "moreNews_left", label: "More News – Left", description: "Section carousel — up to 12 articles", maxSlots: 12 },
+  { key: "moreNews_center", label: "More News – Center", description: "Section carousel — up to 12 articles", maxSlots: 12 },
+  { key: "moreNews_right", label: "More News – Right", description: "Section carousel — up to 12 articles", maxSlots: 12 },
+  { key: "mustWatch", label: "Must Watch", description: "Section carousel — up to 12 articles", maxSlots: 12 },
 ]
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
@@ -83,21 +88,21 @@ export default function AdminDashboard() {
   const [placements, setPlacements] = useState<PlacementsMap>({})
   const [activeSection, setActiveSection] = useState(SECTIONS[0].key)
   const [activeTab, setActiveTab] = useState<
-    "placements" | "categories" | "homepage" | "navbar" | "footer"
+    "placements" | "categories" | "homepage" | "navbar" | "footer" | "ticker"
   >("placements")
   const [catSettings, setCatSettings] = useState<CategorySetting[]>([])
   const [catSaving, setCatSaving] = useState<string | null>(null)
   const [homepageSections, setHomepageSections] = useState<HomepageSection[]>([])
   const [newSectionLabel, setNewSectionLabel] = useState("")
   const [newSectionSlug, setNewSectionSlug] = useState("")
-  const [newSectionMax, setNewSectionMax] = useState(4)
+  const [newSectionMax, setNewSectionMax] = useState(12)
   const [hpSaving, setHpSaving] = useState(false)
   // Inline edit state for homepage sections
   const [editingHpId, setEditingHpId] = useState<string | null>(null)
   const [editHpLabel, setEditHpLabel] = useState("")
   const [editHpSlug, setEditHpSlug] = useState("")
   const [editHpCustomSlug, setEditHpCustomSlug] = useState(false)
-  const [editHpMax, setEditHpMax] = useState(4)
+  const [editHpMax, setEditHpMax] = useState(12)
   const [editHpSaving, setEditHpSaving] = useState(false)
   // Inline edit state for category titles
   const [editingCatSlug, setEditingCatSlug] = useState<string | null>(null)
@@ -127,6 +132,10 @@ export default function AdminDashboard() {
   }
 
   const [search, setSearch] = useState("")
+  const [tickerEnabled, setTickerEnabled] = useState(false)
+  const [tickerItems, setTickerItems] = useState<string[]>([])
+  const [tickerInput, setTickerInput] = useState("")
+  const [tickerSaving, setTickerSaving] = useState(false)
   const [saving, setSaving] = useState<string | null>(null) // "section:order"
   const [removing, setRemoving] = useState<string | null>(null)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
@@ -159,11 +168,14 @@ export default function AdminDashboard() {
         headers: { Authorization: `Bearer ${getToken()}` },
       }).then((r) => r.json()),
       fetch(`${BACKEND}/api/section-labels`).then((r) => r.json()).catch(() => ({})),
+      fetch(`${BACKEND}/api/news-ticker`).then((r) => r.json()).catch(() => ({ enabled: false, items: [] })),
     ])
-      .then(([arts, plac, sanityCategories, hpSecs, backendLabels]) => {
+      .then(([arts, plac, sanityCategories, hpSecs, backendLabels, ticker]) => {
         setArticles(Array.isArray(arts) ? arts : [])
         setPlacements(plac || {})
         setHomepageSections(Array.isArray(hpSecs) ? hpSecs : [])
+        setTickerEnabled(Boolean((ticker as NewsTickerConfig)?.enabled))
+        setTickerItems(Array.isArray((ticker as NewsTickerConfig)?.items) ? (ticker as NewsTickerConfig).items : [])
 
         // Load labels from DB into state
         const dbLabels: Record<string, string> =
@@ -213,6 +225,26 @@ export default function AdminDashboard() {
     setToast({ msg, ok })
     setTimeout(() => setToast(null), 3000)
   }, [])
+
+  async function saveTickerConfig() {
+    setTickerSaving(true)
+    try {
+      const res = await fetch(`${BACKEND}/api/news-ticker`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ enabled: tickerEnabled, items: tickerItems }),
+      })
+      if (!res.ok) throw new Error()
+      const updated = await res.json()
+      setTickerEnabled(Boolean(updated?.enabled))
+      setTickerItems(Array.isArray(updated?.items) ? updated.items : [])
+      showToast("Latest ticker updated!")
+    } catch {
+      showToast("Ticker save failed.", false)
+    } finally {
+      setTickerSaving(false)
+    }
+  }
 
   // ── Save a slot ─────────────────────────────────────────────────────────────
   async function saveSlot(section: string, order: number, article: SanityArticle) {
@@ -355,7 +387,7 @@ export default function AdminDashboard() {
       setHomepageSections((prev) => [...prev, created])
       setNewSectionLabel("")
       setNewSectionSlug("")
-      setNewSectionMax(4)
+      setNewSectionMax(12)
       showToast("Section created!")
     } catch (err: any) {
       showToast(err.message || "Create failed.", false)
@@ -652,11 +684,98 @@ export default function AdminDashboard() {
               {homepageSections.length}
             </span>
           </button>
+          <button
+            onClick={() => setActiveTab("ticker")}
+            className={`w-full text-left px-4 py-3 flex items-center gap-2 transition text-sm ${
+              activeTab === "ticker"
+                ? "bg-[#bb1919] text-white"
+                : "text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            <span className="font-medium">Latest Ticker</span>
+          </button>
         </nav>
 
         {/* ── MAIN CONTENT ─────────────────────────────────────────────────── */}
         <main className="flex-1 overflow-y-auto p-6 flex gap-6">
-          {activeTab === "homepage" ? (
+          {activeTab === "ticker" ? (
+            <div className="flex-1 min-w-0 max-w-2xl">
+              <div className="mb-5">
+                <h2 className="text-xl font-serif font-bold text-gray-900">Latest News Ticker</h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Add short text items to show as moving news between Navbar and Top News.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-4 mb-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">Show ticker on homepage</p>
+                    <p className="text-xs text-gray-500">Turn this section on or off anytime.</p>
+                  </div>
+                  <button
+                    onClick={() => setTickerEnabled((v) => !v)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      tickerEnabled ? "bg-green-500" : "bg-gray-200"
+                    }`}
+                  >
+                    <span className={`inline-block h-4.5 w-4.5 transform rounded-full bg-white transition-transform ${
+                      tickerEnabled ? "translate-x-6" : "translate-x-1"
+                    }`} />
+                  </button>
+                </div>
+
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={tickerInput}
+                    onChange={(e) => setTickerInput(e.target.value)}
+                    placeholder="Type latest news text..."
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#bb1919]"
+                  />
+                  <button
+                    onClick={() => {
+                      const text = tickerInput.trim()
+                      if (!text) return
+                      setTickerItems((prev) => (prev.length >= 30 ? prev : [...prev, text]))
+                      setTickerInput("")
+                    }}
+                    className="shrink-0 bg-gray-900 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-black transition"
+                  >
+                    Add
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {tickerItems.map((item, idx) => (
+                    <div key={`${item}-${idx}`} className="flex items-center gap-2 border border-gray-100 rounded-lg px-3 py-2">
+                      <span className="text-xs text-gray-400 font-bold">{idx + 1}.</span>
+                      <p className="flex-1 text-sm text-gray-800">{item}</p>
+                      <button
+                        onClick={() => setTickerItems((prev) => prev.filter((_, i) => i !== idx))}
+                        className="text-xs text-red-600 hover:text-red-800 font-semibold"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  {tickerItems.length === 0 && (
+                    <p className="text-sm text-gray-400 italic">No ticker items yet. Add a few short lines.</p>
+                  )}
+                </div>
+
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={saveTickerConfig}
+                    disabled={tickerSaving}
+                    className="bg-[#bb1919] text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-[#9a1414] transition disabled:opacity-50"
+                  >
+                    {tickerSaving ? "Saving…" : "Save ticker"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : activeTab === "homepage" ? (
             /* ── HOMEPAGE LAYOUT PANEL ────────────────────────────────────── */
             <div className="flex-1 min-w-0 max-w-2xl">
               <div className="mb-5">
@@ -696,6 +815,8 @@ export default function AdminDashboard() {
                     <option value={4}>4 articles</option>
                     <option value={6}>6 articles</option>
                     <option value={8}>8 articles</option>
+                    <option value={10}>10 articles</option>
+                    <option value={12}>12 articles</option>
                   </select>
                   <button
                     onClick={createHpSection}
@@ -817,6 +938,8 @@ export default function AdminDashboard() {
                             <option value={4}>4</option>
                             <option value={6}>6</option>
                             <option value={8}>8</option>
+                            <option value={10}>10</option>
+                            <option value={12}>12</option>
                           </select>
                         </div>
                         {/* Save */}

@@ -9,8 +9,10 @@ function resolveUrl(image: any, width = 80): string | null {
 }
 
 function timeAgo(dateString: string) {
+  if (!dateString) return null
   const now = new Date()
   const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) return null
   const diff = Math.floor((now.getTime() - date.getTime()) / 1000 / 60 / 60)
 
   if (diff < 1) return "Less than 1 hr ago"
@@ -22,27 +24,32 @@ function timeAgo(dateString: string) {
 }
 
 export default function SidebarItem({ article }: any) {
+  const relativeTime = timeAgo(article.publishedAt)
+
   return (
     <Link href={`/article/${article.slug.current}`}>
-      <div className="group border-b border-gray-200 pb-4 cursor-pointer flex items-start gap-2">
+      <div className="group border-b border-gray-200 pt-4 pb-4 first:pt-3 cursor-pointer">
 
-        {/* Bullet */}
-        <span className="mt-[6px] w-2 h-2 rounded-full bg-gray-400 flex-shrink-0"></span>
-
-        <div>
-          {article.categories?.[0] && (
-            <p className="text-[11px] font-bold uppercase text-[#bb1919] mb-[2px] tracking-wide">
+        {article.categories?.[0] && (
+          <div className="mb-1 flex items-center gap-2">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-gray-400" />
+            <p className="text-[11px] font-bold uppercase text-[#bb1919] tracking-wide leading-none">
               {article.categories[0].title}
             </p>
-          )}
+          </div>
+        )}
+
+        <div>
 
           <h4 className="font-serif text-[15px] font-bold leading-snug group-hover:underline text-black">
             {article.title}
           </h4>
 
-          <p className="text-xs text-gray-500 mt-1">
-            {timeAgo(article.publishedAt)}
-          </p>
+          {relativeTime && (
+            <p className="text-xs text-gray-500 mt-1">
+              {relativeTime}
+            </p>
+          )}
         </div>
 
       </div>

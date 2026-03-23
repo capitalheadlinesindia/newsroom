@@ -4,6 +4,23 @@ const auth = require("../middleware/authMiddleware")
 
 const router = express.Router()
 
+function validateOrder(section, rawOrder) {
+  const order = Number(rawOrder)
+  if (!Number.isInteger(order) || order < 0) {
+    return { ok: false, order: 0, message: "Invalid slot order." }
+  }
+
+  if (section === "hero" && order !== 0) {
+    return { ok: false, order, message: "Hero section supports only slot 1." }
+  }
+
+  if (section !== "hero" && order > 11) {
+    return { ok: false, order, message: "This section supports up to 12 slots." }
+  }
+
+  return { ok: true, order }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC — used by the Next.js frontend to render the homepage
 // ─────────────────────────────────────────────────────────────────────────────
@@ -59,11 +76,16 @@ router.put("/:section/:order", auth, async (req, res) => {
       return res.status(400).json({ message: "articleId, articleTitle, and articleSlug are required." })
     }
 
+    const validatedOrder = validateOrder(section, order)
+    if (!validatedOrder.ok) {
+      return res.status(400).json({ message: validatedOrder.message })
+    }
+
     const placement = await Placement.findOneAndUpdate(
-      { section, order: Number(order) },
+      { section, order: validatedOrder.order },
       {
         section,
-        order: Number(order),
+        order: validatedOrder.order,
         articleId,
         articleTitle,
         articleSlug,

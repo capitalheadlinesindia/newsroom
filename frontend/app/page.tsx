@@ -12,7 +12,8 @@ import HeroArticle from "@/app/components/HeroArticle"
 import ArticleCard from "@/app/components/ArticleCard"
 import SidebarItem from "@/app/components/SidebarItem"
 import SectionHeader from "@/app/components/SectionHeader"
-import FourGrid from "@/app/components/FourGrid"
+import HorizontalCarouselSection from "@/app/components/HorizontalCarouselSection"
+import NewsTicker from "@/app/components/NewsTicker"
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
 const PLACEHOLDER = "https://placehold.co/400x250/e5e7eb/9ca3af?text=No+Image"
@@ -61,6 +62,11 @@ interface CategoryItem {
   title: string
 }
 
+interface NewsTickerConfig {
+  enabled: boolean
+  items: string[]
+}
+
 async function fetchHomepageSections(): Promise<HomepageSection[]> {
   try {
     const res = await fetch(`${BACKEND}/api/homepage-sections`, { next: { revalidate: 60 } })
@@ -78,6 +84,20 @@ async function fetchVisibleCategories(): Promise<CategoryItem[]> {
     return res.json()
   } catch {
     return []
+  }
+}
+
+async function fetchNewsTicker(): Promise<NewsTickerConfig> {
+  try {
+    const res = await fetch(`${BACKEND}/api/news-ticker`, { cache: "no-store" })
+    if (!res.ok) return { enabled: false, items: [] }
+    const data = await res.json()
+    return {
+      enabled: Boolean(data?.enabled),
+      items: Array.isArray(data?.items) ? data.items.filter((i: unknown) => typeof i === "string") : [],
+    }
+  } catch {
+    return { enabled: false, items: [] }
   }
 }
 
@@ -115,6 +135,7 @@ export default async function HomePage() {
   // Fetch admin-customised section labels (overrides defaults)
   const backendLabels = await fetchSectionLabels()
   const resolvedLabels = { ...DEFAULT_SECTION_LABELS, ...backendLabels }
+  const ticker = await fetchNewsTicker()
 
   // Fetch admin-defined homepage sections. Only render sections explicitly
   // configured by the admin; do NOT auto-fall back to Sanity or visible
@@ -136,25 +157,27 @@ export default async function HomePage() {
   return (
     <main className="bg-white">
 
+      <NewsTicker enabled={ticker.enabled} items={ticker.items} />
+
       {/* ── TOP NEWS ───────────────────────────────────── */}
-      <div className="max-w-screen-xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
         <SectionHeader title="Top News" />
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
 
           {/* LEFT — Featured cards */}
-          <section className="md:col-span-3 space-y-0 md:border-r md:border-gray-200 md:pr-6">
+          <section className="order-2 md:order-1 md:col-span-3 space-y-0 md:border-r md:border-gray-200 md:pr-6">
             {featured?.map((article: any) => (
               <ArticleCard key={article._id} article={article} />
             ))}
           </section>
 
           {/* CENTER — Hero */}
-          <section className="md:col-span-6 md:border-r md:border-gray-200 md:pr-6">
+          <section className="order-1 md:order-2 md:col-span-6 md:border-r md:border-gray-200 md:pr-6">
             {hero && <HeroArticle article={hero} />}
           </section>
 
           {/* RIGHT — Sidebar */}
-          <aside className="md:col-span-3 space-y-0">
+          <aside className="order-3 md:order-3 md:col-span-3 space-y-0">
             {sidebar?.map((article: any) => (
               <SidebarItem
                 key={article.slug.current}
@@ -172,8 +195,8 @@ export default async function HomePage() {
         if (items.length === 0) return null
         return (
           <div key={key}>
-            <hr className="border-gray-200 max-w-screen-xl mx-auto" />
-            <FourGrid title={resolvedLabels[key] || key} items={items} />
+            <hr className="border-gray-200 max-w-7xl mx-auto" />
+            <HorizontalCarouselSection title={resolvedLabels[key] || key} items={items} />
           </div>
         )
       })}
@@ -183,8 +206,8 @@ export default async function HomePage() {
         const items = toFourGridItems(sectionArticles[idx] || [])
         return (
           <div key={sec._id}>
-            <hr className="border-gray-200 max-w-screen-xl mx-auto" />
-            <FourGrid title={sec.label} items={items} />
+            <hr className="border-gray-200 max-w-7xl mx-auto" />
+            <HorizontalCarouselSection title={sec.label} items={items} />
           </div>
         )
       })}

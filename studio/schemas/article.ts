@@ -78,10 +78,50 @@ export default defineType({
     }),
 
     defineField({
+      name: "heroYouTubeUrl",
+      title: "Hero YouTube URL (optional)",
+      description: "If provided, this video will be shown instead of the main image on the article page.",
+      type: "url",
+      validation: (Rule) =>
+        Rule.uri({ scheme: ["http", "https"] }).custom((value: string | undefined) => {
+          if (!value) return true
+          return /(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)/i.test(value)
+            ? true
+            : "Enter a valid YouTube URL"
+        }),
+    }),
+
+    defineField({
       name: "body",
       title: "Body (English)",
       type: "array",
-      of: [{ type: "block" }],
+      of: [
+        { type: "block" },
+        {
+          type: "image",
+          options: { hotspot: true },
+          fields: [
+            defineField({
+              name: "alt",
+              title: "Alt text",
+              type: "string",
+            }),
+            defineField({
+              name: "caption",
+              title: "Caption",
+              type: "string",
+            }),
+            defineField({
+              name: "linkUrl",
+              title: "Link URL (optional)",
+              description: "If set, the image in the article body will be clickable.",
+              type: "url",
+              validation: (Rule) => Rule.uri({ scheme: ["http", "https"] }),
+            }),
+          ],
+        },
+        { type: "youtubeEmbed" },
+      ],
     }),
 
     defineField({
@@ -90,7 +130,33 @@ export default defineType({
       description:
         "Upload the Hindi version of the article body here. If filled, readers will be able to toggle to Hindi on the article page.",
       type: "array",
-      of: [{ type: "block" }],
+      of: [
+        { type: "block" },
+        {
+          type: "image",
+          options: { hotspot: true },
+          fields: [
+            defineField({
+              name: "alt",
+              title: "Alt text",
+              type: "string",
+            }),
+            defineField({
+              name: "caption",
+              title: "Caption",
+              type: "string",
+            }),
+            defineField({
+              name: "linkUrl",
+              title: "Link URL (optional)",
+              description: "If set, the image in the article body will be clickable.",
+              type: "url",
+              validation: (Rule) => Rule.uri({ scheme: ["http", "https"] }),
+            }),
+          ],
+        },
+        { type: "youtubeEmbed" },
+      ],
     }),
 
     defineField({

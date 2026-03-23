@@ -9,6 +9,7 @@ const categoriesRoutes = require("./routes/categories")
 const homepageSectionsRoutes = require("./routes/homepageSections")
 const sectionLabelsRoutes = require("./routes/sectionLabels")
 const keepAliveRoutes = require("./routes/keepAlive")
+const newsTickerRoutes = require("./routes/newsTicker")
 
 const app = express()
 
@@ -35,6 +36,7 @@ app.use("/api/categories", categoriesRoutes)
 app.use("/api/homepage-sections", homepageSectionsRoutes)
 app.use("/api/section-labels", sectionLabelsRoutes)
 app.use("/api/keepalive", keepAliveRoutes)
+app.use("/api/news-ticker", newsTickerRoutes)
 
 // ── HEALTH CHECK ──────────────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }))

@@ -3,6 +3,12 @@ const router = express.Router()
 const HomepageSection = require("../models/HomepageSection")
 const authMiddleware = require("../middleware/authMiddleware")
 
+function normalizeMaxArticles(value) {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return 12
+  return Math.max(1, Math.min(12, Math.floor(n)))
+}
+
 // GET /api/homepage-sections
 // Public — returns all visible sections sorted by order
 router.get("/", async (_req, res) => {
@@ -39,7 +45,7 @@ router.post("/", authMiddleware, async (req, res) => {
     const section = await HomepageSection.create({
       label,
       categorySlug,
-      maxArticles: maxArticles || 4,
+      maxArticles: normalizeMaxArticles(maxArticles),
       order,
       visible: true,
     })
@@ -54,15 +60,20 @@ router.post("/", authMiddleware, async (req, res) => {
 router.put("/:id", authMiddleware, async (req, res) => {
   try {
     const { label, categorySlug, maxArticles, visible, order } = req.body
+    const updateDoc = {
+      ...(label !== undefined && { label }),
+      ...(categorySlug !== undefined && { categorySlug }),
+      ...(visible !== undefined && { visible }),
+      ...(order !== undefined && { order }),
+    }
+
+    if (maxArticles !== undefined) {
+      updateDoc.maxArticles = normalizeMaxArticles(maxArticles)
+    }
+
     const section = await HomepageSection.findByIdAndUpdate(
       req.params.id,
-      {
-        ...(label !== undefined && { label }),
-        ...(categorySlug !== undefined && { categorySlug }),
-        ...(maxArticles !== undefined && { maxArticles }),
-        ...(visible !== undefined && { visible }),
-        ...(order !== undefined && { order }),
-      },
+      updateDoc,
       { new: true }
     )
     if (!section) return res.status(404).json({ message: "Section not found" })

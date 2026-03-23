@@ -42,8 +42,10 @@ export const relatedArticlesQuery = `
 *[_type == "article" && $category in categories[]->slug.current && slug.current != $slug]
 | order(publishedAt desc)[0...4]{
   title,
+  titleHindi,
   slug,
   excerpt,
+  excerptHindi,
   publishedAt,
   mainImage,
   categories[]->
